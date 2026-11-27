@@ -15,6 +15,17 @@
    so a child can ask "what if there were one more mango?" and see it. That
    gives a fruit's value away, so it is exploring, not solving — and the
    Put-back button returns the lines as they were dealt.
+
+   EVERY PUZZLE IS TIMED AND SCORED. The clock runs from the deal until the
+   puzzle is solved (and stops while the tab is hidden). The score starts at
+   the level's points and is shown live, so a child sees it fall:
+     inside the level's par time   nothing is lost
+     past par                      1 point a second
+     a Check with a wrong answer   20 points
+     any fruit deleted/duplicated  the score is halved (the edit gives a
+                                   value away)
+   It never falls below a tenth of the level's points: finishing is worth
+   something. The best score for each level is kept on this device.
    ========================================================================== */
 
 import { UI } from "/utils/components/ui-icons.js";
@@ -35,6 +46,11 @@ const S = {
   p: null,
   orig: null,          // the lines as dealt, for Put back
   done: false,
+  ran: 0,              // ms on the clock before the current stretch
+  since: 0,            // when the current stretch started (0 = stopped)
+  misses: 0,           // Checks that found a wrong answer
+  explored: false,     // a fruit was deleted or duplicated
+  final: null,         // the score, once solved
 };
 
 function remember() {
@@ -167,6 +183,8 @@ function editTerm(row, col, delta) {
 
   t.k += delta;
   if (t.k === 0) terms.splice(col, 1);
+  S.explored = true;
+  drawStats();
 
   let before;
   let after;
@@ -271,6 +289,7 @@ function deal() {
   closeMenu();
   draw();
   drawResetButton();
+  startClock();
   say(S.letters
     ? "Find the value of each letter."
     : "Each fruit stands for a number. Find what each one is worth.");
@@ -325,12 +344,93 @@ function check() {
 
   if (!wrong && !blank) {
     S.done = true;
-    say("All correct. Every fruit found and the last line answered.", true);
+    if (S.final == null) finish();
+    const best = S.newBest ? " A new best for this level." : "";
+    say(`All correct in ${clockText(elapsed())}. Score ${S.final}.${best}`, true);
   } else if (wrong) {
+    if (S.final == null) { S.misses++; drawStats(); }
     say(wrong === 1 ? "One answer is not right yet. Check it against the lines." : `${wrong} answers are not right yet. Check them against the lines.`);
   } else {
     say("So far so good. Fill in every fruit and the last line.");
   }
+}
+
+/* ── the clock and the score ──────────────────────────────────────────── */
+
+const POINTS = { starter: 100, easy: 200, medium: 300, hard: 400 };
+const PAR = { starter: 60, easy: 120, medium: 180, hard: 300 };   // seconds
+const MISS = 20;
+const BEST = "prep-portal:fruit-sums:best";
+
+const elapsed = () => S.ran + (S.since ? Date.now() - S.since : 0);
+
+function clockText(ms) {
+  const s = Math.floor(ms / 1000);
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+}
+
+function scoreNow() {
+  const base = POINTS[S.level];
+  const over = Math.max(0, Math.floor(elapsed() / 1000) - PAR[S.level]);
+  let pts = base - over - MISS * S.misses;
+  if (S.explored) pts = Math.floor(pts / 2);
+  return Math.max(Math.round(base / 10), pts);
+}
+
+function bests() {
+  try { return JSON.parse(localStorage.getItem(BEST) || "{}") || {}; } catch { return {}; }
+}
+const bestOf = (level) => bests()[level] || 0;
+
+let ticker = 0;
+function startClock() {
+  S.ran = 0;
+  S.since = document.hidden ? 0 : Date.now();
+  S.misses = 0;
+  S.explored = false;
+  S.final = null;
+  clearInterval(ticker);
+  ticker = setInterval(drawStats, 500);
+  drawStats();
+}
+
+function pauseClock() {
+  if (!S.since) return;
+  S.ran += Date.now() - S.since;
+  S.since = 0;
+}
+
+function finish() {
+  pauseClock();
+  clearInterval(ticker);
+  S.final = scoreNow();
+  const all = bests();
+  S.newBest = S.final > (all[S.level] || 0);
+  if (S.newBest) {
+    all[S.level] = S.final;
+    try { localStorage.setItem(BEST, JSON.stringify(all)); } catch { /* fine */ }
+  }
+  drawStats();
+}
+
+function drawStats() {
+  const t = $("#fs-time");
+  const sc = $("#fs-score");
+  if (!t || !sc) return;
+  const ms = elapsed();
+  const over = Math.floor(ms / 1000) > PAR[S.level];
+  t.innerHTML = `${UI.clock()}<span>${clockText(ms)}</span>`;
+  t.classList.toggle("pp-pill--warn", over && S.final == null);
+  t.setAttribute("aria-label", `Time ${clockText(ms)}`);
+  t.dataset.tip = `Par for ${levelOf(S.level).name}: ${clockText(PAR[S.level] * 1000)}. After that, a point a second.`;
+  const pts = S.final ?? scoreNow();
+  sc.innerHTML = `${UI.star(true)()}<span>${pts}</span>`;
+  sc.classList.toggle("pp-pill--ok", S.final != null);
+  sc.setAttribute("aria-label", `Score ${pts}`);
+  const best = bestOf(S.level);
+  sc.dataset.tip = (S.explored ? "Halved: a fruit was changed. " : "")
+    + (S.misses ? `${S.misses} wrong ${S.misses === 1 ? "check" : "checks"}, ${MISS} points each. ` : "")
+    + (best ? `Best on ${levelOf(S.level).name}: ${best}` : `Out of ${POINTS[S.level]}`);
 }
 
 function say(text, win = false) {
@@ -449,6 +549,14 @@ function init() {
   });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeMenu(); });
   window.addEventListener("resize", closeMenu);
+
+  /* the clock only runs while the page can be seen */
+  document.addEventListener("visibilitychange", () => {
+    if (S.final != null) return;
+    if (document.hidden) pauseClock();
+    else if (!S.since) S.since = Date.now();
+    drawStats();
+  });
 
   mountRolling(document.querySelector(".fs-work"), ".fs-box");
 

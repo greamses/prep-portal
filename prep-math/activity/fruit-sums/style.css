@@ -36,6 +36,16 @@
 }
 .fs-levels, .fs-tools { display: flex; flex-wrap: wrap; gap: 0.6rem; }
 
+/* the clock and the score: pills, read not pressed */
+.fs-stats { display: flex; gap: 0.6rem; margin-left: auto; }
+.fs-stat.pp-pill { cursor: default; font-size: 0.85rem; padding: 0.45rem 0.8rem; color: var(--ink, #2a2723); }
+.fs-stat.pp-pill:hover { transform: none; box-shadow: var(--shadow-sm); }
+.fs-stat.pp-pill svg { width: 17px; height: 17px; }
+.fs-stat span { font-variant-numeric: tabular-nums; min-width: 2.6em; text-align: right; }
+.fs-stat.pp-pill--warn { color: var(--ink, #2a2723); }
+.fs-stat.pp-pill--ok { color: var(--ink, #2a2723); }
+@media (max-width: 560px) { .fs-stats { margin-left: 0; } }
+
 .fs-level.pp-note-btn { opacity: 0.6; padding: 0.5rem 0.95rem 0.55rem; }
 .fs-level.pp-note-btn[aria-checked="true"] {
   opacity: 1;
