@@ -67,7 +67,8 @@
   grid-template-columns: minmax(0, 1fr);
 }
 
-.fs-board.pp-receipt { display: block; }
+/* the board: centred, and only as wide as its longest line */
+.fs-board.pp-receipt { display: block; width: fit-content; max-width: 100%; margin: 0 auto; }
 .fs-board__paper { padding: 1.6rem 1.4rem 1.8rem; overflow-x: auto; }
 
 /* one equation a line */
@@ -310,15 +311,6 @@
   font-weight: 800;
   color: var(--ink, #2a2723);
 }
-.fs-modal .fs-modal__close {
-  --pp-note-bg: #ffd7a3;
-  --pp-note-tilt: 2deg;
-  display: grid;
-  place-items: center;
-  width: 2.3rem;
-  height: 2.1rem;
-  padding: 0;
-}
 .fs-modal .fs-modal__close svg { width: 16px; height: 16px; }
 .fs-modal__body { min-height: 0; overflow: auto; padding: 0.2rem 0.2rem 0.3rem 0; }
 
@@ -333,38 +325,44 @@
   color: var(--text-secondary, #6b655c);
 }
 .fs-opts { display: flex; flex-wrap: wrap; gap: 0.6rem; }
-.fs-opts .fs-opt {
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.1rem;
-  min-height: 2.6rem;
-  padding: 0.5rem 0.85rem 0.55rem;
-  font-size: 0.9rem;
-  line-height: 1.2;
-  text-align: left;
-  --pp-note-bg: #f0ece2;
-  color: #6b645a;
-}
-.fs-opts .fs-opt.is-on { --pp-note-bg: #fff3a8; color: #14130f; }
-.fs-opts .fs-opt em { font-size: 0.66rem; font-style: normal; font-weight: 600; opacity: 0.75; }
 
-/* the options are icons: square notes, the icon in the middle */
-.fs-opts .fs-opt {
-  align-items: center;
-  justify-content: center;
-  min-width: 3.6rem;
-  min-height: 3.3rem;
-  padding: 0.5rem 0.7rem;
-}
 .fs-opt__ico { display: inline-flex; }
 .fs-opts .fs-opt .fs-opt__ico > svg { width: 32px; height: 32px; }
-.fs-opts .fs-opt:not(.is-on) .fs-opt__ico { opacity: 0.55; }
 
 /* a level's stars, one to four in a row */
 .fs-stars { display: inline-flex; gap: 1px; }
 .fs-opts .fs-opt .fs-stars svg { width: 20px; height: 20px; }
 @media (max-width: 420px) {
   .fs-opts .fs-opt .fs-stars svg { width: 15px; height: 15px; }
-  #fs-opt-level .fs-opt { min-width: 3rem; padding: 0.5rem 0.5rem; }
   #fs-opt-level { gap: 0.45rem; }
 }
+
+/* the settings are plain icons, not sticky notes: a square key, faded when
+   not chosen, the chosen one lit on a soft tint with an accent edge */
+.fs-opts .fs-opt.pp-plain,
+.fs-modal .fs-modal__close.pp-plain {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 3.3rem;
+  min-height: 3.1rem;
+  padding: 0.4rem 0.6rem;
+  border: 2px solid transparent;
+  border-radius: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.15s;
+}
+.fs-opts .fs-opt.pp-plain:hover { background: color-mix(in srgb, var(--accent-secondary, #6fb7e8) 12%, transparent); }
+.fs-opts .fs-opt.pp-plain:focus-visible,
+.fs-modal .fs-modal__close.pp-plain:focus-visible { outline: 2px solid var(--accent-secondary, #6fb7e8); outline-offset: 2px; }
+.fs-opts .fs-opt.pp-plain .fs-opt__ico { opacity: 0.45; transition: opacity 0.15s; }
+.fs-opts .fs-opt.pp-plain.is-on {
+  border-color: var(--accent-primary, #f4c95d);
+  background: color-mix(in srgb, var(--accent-primary, #f4c95d) 24%, transparent);
+}
+.fs-opts .fs-opt.pp-plain.is-on .fs-opt__ico { opacity: 1; }
+.fs-modal .fs-modal__close.pp-plain { min-width: 2.4rem; min-height: 2.4rem; padding: 0; }
+.fs-modal .fs-modal__close.pp-plain svg { width: 18px; height: 18px; }
+.fs-modal .fs-modal__close.pp-plain:hover { background: color-mix(in srgb, var(--accent-danger, #f07a7a) 14%, transparent); }

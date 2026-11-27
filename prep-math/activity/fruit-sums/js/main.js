@@ -442,12 +442,12 @@ function levelShort(l) {
   return [`${l.fruits} fruits`, l.maxK === 3 ? "triples" : "doubles", l.minus ? "take away" : ""].filter(Boolean).join(" · ");
 }
 
-/* Every setting is an ICON on a sticky note (the house rule: a button shows
+/* Every setting is a plain ICON (no sticky note) (the house rule: a button shows
    an icon or words, never both). Its name and what it does are in the
    tooltip and the aria-label. */
 const optHtml = (kind, val, glyph, label, on, hint = "") => {
   const words = hint ? `${label}: ${hint}` : label;
-  return `<button type="button" role="radio" class="pp-sticky pp-note-btn fs-opt${on ? " is-on" : ""}"`
+  return `<button type="button" role="radio" class="pp-plain fs-opt${on ? " is-on" : ""}"`
     + ` data-opt="${kind}" data-val="${val}" aria-checked="${on}" aria-label="${words}" data-tip="${words}">`
     + `<span class="fs-opt__ico" aria-hidden="true">${glyph}</span></button>`;
 };
@@ -467,21 +467,18 @@ const WORK_ICON = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" a
   + `<circle cx="12" cy="17.4" r="5.4" fill="var(--accent-danger)"/>`
   + `<circle cx="10.2" cy="15.6" r="1.3" fill="#fff" opacity=".7"/></svg>`;
 
-/* The same fruit with no box over it. */
-const BARE_ICON = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">`
-  + `<rect x="3" y="1.4" width="18" height="9.4" rx="1.4" fill="var(--text-tertiary)" opacity=".35"/>`
-  + `<circle cx="12" cy="17.4" r="5.4" fill="var(--accent-danger)"/>`
-  + `<circle cx="10.2" cy="15.6" r="1.3" fill="#fff" opacity=".7"/></svg>`;
-
 function drawSettings() {
   $("#fs-opt-level").innerHTML = LEVELS
     .map((l, i) => optHtml("level", l.id, stars(i + 1), l.name, S.level === l.id, levelShort(l))).join("");
   $("#fs-opt-letters").innerHTML =
     optHtml("letters", "0", fruitSvg("apple"), "Fruits", !S.letters, "the pictures")
     + optHtml("letters", "1", LETTER_ICON, "Letters", S.letters, "a, b, c as algebra");
+  /* ONE icon that switches the boxes on and off: lit when they are shown */
+  const word = S.work ? "Working boxes are on. Tap to hide them" : "Working boxes are off. Tap to show them";
   $("#fs-opt-work").innerHTML =
-    optHtml("work", "1", WORK_ICON, "Working boxes shown", S.work, "write each term's value")
-    + optHtml("work", "0", BARE_ICON, "Working boxes hidden", !S.work, "just the fruits");
+    `<button type="button" class="pp-plain fs-opt${S.work ? " is-on" : ""}" data-opt="work" data-val="toggle"`
+    + ` aria-pressed="${S.work}" aria-label="${word}" data-tip="${word}">`
+    + `<span class="fs-opt__ico" aria-hidden="true">${WORK_ICON}</span></button>`;
 }
 
 /* The pill in the bar names the level and opens the settings. */
@@ -532,8 +529,8 @@ function wireSettings() {
       S.letters = val === "1";
       redraw();
     }
-    if (opt === "work" && (val === "1") !== S.work) {
-      S.work = val === "1";
+    if (opt === "work") {
+      S.work = !S.work;
       applyWork();
     }
     remember();
