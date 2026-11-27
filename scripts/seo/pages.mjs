@@ -309,6 +309,21 @@ export const PAGES = [
     ],
   },
   {
+    file: "prep-math/activity/fruit-sums/index.html",
+    section: "maths",
+    name: "Fruit Sums",
+    title: "Fruit Sums: Picture Equations That Teach Simultaneous Equations",
+    desc: "Fruit picture puzzles where each fruit stands for a number. Solve the lines to find every fruit, then switch to letters and see the same puzzle as algebra.",
+    intro:
+      "Every line is a sum of fruits with a total. Each fruit stands for a number, and two or three of the same fruit side by side means double or triple it. Work out what each fruit is worth, write the value of each part in the box above it, and answer the last line. Switch on letters and the same puzzle becomes simultaneous equations: a + b = 20, a + c = 16, b + c = 6. A new puzzle is made every time, and each one has exactly one answer.",
+    points: [
+      "Four levels, from two fruits to four with some taken away",
+      "Single, double and triple fruits",
+      "Letters on or off: the fruit sum and the equation side by side",
+      "A box above every term for the working",
+    ],
+  },
+  {
     file: "prep-math/activity/card-tricks/index.html",
     section: "maths",
     name: "Card Tricks",

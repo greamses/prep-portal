@@ -201,6 +201,7 @@ const NAV_CONFIG = [
              four sibling entries the reader has to tell apart. */
           { text: "Geometry", href: "/prep-math/activity/polygon-angles/", description: "Angles, transversals, Pythagoras and surface area" },
           { text: "Number Match", href: "/prep-math/activity/number-match/", description: "Match words, tallies and blocks to the number" },
+          { text: "Fruit Sums", href: "/prep-math/activity/fruit-sums/", description: "Picture equations: find what each fruit is worth" },
           { text: "Toy Shop", href: "/prep-math/activity/toy-shop/", description: "Buy toys and work out the bill, the tax and the change" },
           { text: "Card Tricks", href: "/prep-math/activity/card-tricks/", description: "A real pack, and six tricks that are sums" },
         ],

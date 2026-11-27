@@ -76,6 +76,7 @@ const GATED = new Set([
   "/tools/organ-tracer",
   "/tools/social-kit",
   "/virtual-lab/biology",
+  "/virtual-lab/biology/heart",
   "/virtual-lab/physics",
   "/workbook-play",
   "/writing/activity/grammar-police",

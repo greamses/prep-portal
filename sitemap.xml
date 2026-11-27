@@ -117,7 +117,7 @@
   </url>
   <url>
     <loc>https://www.prepportal.com.ng/virtual-lab/</loc>
-    <lastmod>2026-11-11</lastmod>
+    <lastmod>2026-11-22</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -165,31 +165,31 @@
   </url>
   <url>
     <loc>https://www.prepportal.com.ng/exam-archive/national/drills/</loc>
-    <lastmod>2026-11-19</lastmod>
+    <lastmod>2026-11-22</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://www.prepportal.com.ng/exam-archive/national/grammar/</loc>
-    <lastmod>2026-11-19</lastmod>
+    <lastmod>2026-11-22</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://www.prepportal.com.ng/exam-archive/national/planner/</loc>
-    <lastmod>2026-11-19</lastmod>
+    <lastmod>2026-11-22</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://www.prepportal.com.ng/exam-archive/national/puzzles/</loc>
-    <lastmod>2026-11-19</lastmod>
+    <lastmod>2026-11-22</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
     <loc>https://www.prepportal.com.ng/exam-archive/national/vocab/</loc>
-    <lastmod>2026-11-19</lastmod>
+    <lastmod>2026-11-22</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -279,7 +279,7 @@
   </url>
   <url>
     <loc>https://www.prepportal.com.ng/prep-math/activity/cartesian-art/</loc>
-    <lastmod>2026-11-01</lastmod>
+    <lastmod>2026-11-21</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -296,8 +296,14 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://www.prepportal.com.ng/prep-math/activity/fruit-sums/</loc>
+    <lastmod>2026-11-27</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://www.prepportal.com.ng/prep-math/activity/</loc>
-    <lastmod>2026-11-20</lastmod>
+    <lastmod>2026-11-21</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
