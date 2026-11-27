@@ -23,7 +23,9 @@
                and known fruits may be taken away.
      tangle  — every line has two or more different fruits and none gives a
                fruit away on its own (a + b, a + c, b + c): the fruits are
-               found together, by comparing lines. Always linear.
+               found together, by comparing lines. Always linear. Starter
+               is ONLY tangles: it never opens on one fruit alone (b + b = 12)
+               — the user's rule.
 
    HOW "ONE ANSWER" IS MADE SURE OF. The values are picked first and the
    lines built round them, so the answer is always whole and positive.
@@ -38,7 +40,7 @@
    ========================================================================== */
 
 export const LEVELS = [
-  { id: "starter", name: "Starter", fruits: 2, maxK: 3, minus: false, powers: "none", shapes: ["chain"], max: 10, cap: 40, ask: "sum" },
+  { id: "starter", name: "Starter", fruits: 2, maxK: 3, minus: false, powers: "none", shapes: ["tangle"], max: 10, cap: 40, ask: "sum" },
   { id: "easy", name: "Easy", fruits: 3, maxK: 3, minus: false, powers: "none", shapes: ["chain", "tangle"], max: 12, cap: 60, ask: "sum" },
   { id: "medium", name: "Medium", fruits: 3, maxK: 3, minus: true, powers: "squares", shapes: ["chain", "chain", "tangle"], max: 10, cap: 80, ask: "square" },
   { id: "hard", name: "Hard", fruits: 4, maxK: 3, minus: true, powers: "all", shapes: ["chain", "chain", "tangle"], max: 10, cap: 60, ask: "times" },
