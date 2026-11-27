@@ -123,6 +123,7 @@
 }
 .fs-alg b { font-weight: 500; font-style: normal; }
 .fs-alg i { font-style: italic; font-weight: 500; }
+.fs-alg sup { font-size: 0.55em; font-style: normal; font-weight: 500; line-height: 1; align-self: flex-start; margin-left: 0.04em; }
 
 .fs-op, .fs-total {
   display: inline-flex;
@@ -390,3 +391,19 @@
 .fs-modal .fs-modal__close.pp-plain { min-width: 2.4rem; min-height: 2.4rem; padding: 0; }
 .fs-modal .fs-modal__close.pp-plain svg { width: 18px; height: 18px; }
 .fs-modal .fs-modal__close.pp-plain:hover { background: color-mix(in srgb, var(--accent-danger, #f07a7a) 14%, transparent); }
+
+/* a phone: the longest line (six fruits, the signs and the total) must
+   still fit across, so everything on the board gets a little smaller */
+@media (max-width: 440px) {
+  .fs-page { --fs-fruit: 1.85rem; padding-left: 0.6rem; padding-right: 0.6rem; }
+  .fs-board__paper { padding: 1.3rem 0.8rem 1.4rem; }
+  .fs-eq { gap: 0.12rem; }
+  .fs-term { min-width: 1.9rem; gap: 0.25rem; }
+  .fs-pick.pp-plain { padding: 0.05rem 0.05rem; }
+  .fs-op { font-size: 1rem; padding: 0 0.05rem; }
+  .fs-total { font-size: 1.1rem; }
+  .fs-box { height: 1.9rem; font-size: 0.85rem; }
+  .fs-box--answer { width: 3.2rem; height: 2.3rem; font-size: 1.05rem; }
+  .fs-alg { font-size: 1.45rem; }
+  .fs-mark { width: 1.4rem; height: 1.4rem; }
+}

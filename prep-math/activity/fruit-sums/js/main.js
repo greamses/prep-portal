@@ -34,7 +34,7 @@ import { UI } from "/utils/components/ui-icons.js";
 import { mountTooltips, setTip } from "/utils/components/tooltip.js";
 import { FRUITS, fruitSvg } from "/utils/components/fruits.js";
 import { PEN_TICK, PEN_CROSS } from "/utils/components/pen-marks.js";
-import { LEVELS, levelOf, makePuzzle, termValue, det } from "./gen.js";
+import { LEVELS, levelOf, makePuzzle, termValue, uniquelySolvable } from "./gen.js";
 import { mountRolling } from "./roll.js";
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -82,18 +82,24 @@ function picture(v, k) {
   return `<span class="fs-group fs-group--${k}">${one.repeat(k)}</span>`;
 }
 
-/* The words a screen reader hears for a term: "two mangoes". */
+/* The words a screen reader hears for a term: "mango", "mango squared". */
 function spoken(t) {
   const p = S.p;
   const word = (v) => (S.letters ? p.letters[v] : nameOf(p.fruits[v]).toLowerCase());
   const lead = t.k > 1 ? `${t.k} ` : "";
+  if (t.times === t.v) return `${lead}${word(t.v)} squared`;
   return t.times != null ? `${lead}${word(t.v)} times ${word(t.times)}` : `${lead}${word(t.v)}`;
 }
 
+/* A square is drawn as the fruit times itself, and in letters as b² (the
+   user's rule); a product of two different fruits stays b × c. */
 function termHtml(t, row, col) {
-  const pic = t.times != null
-    ? `${picture(t.v, t.k)}<span class="fs-op fs-op--in">×</span>${picture(t.times, 1)}`
-    : picture(t.v, t.k);
+  const square = t.times != null && t.times === t.v;
+  const pic = square && S.letters
+    ? `<span class="fs-alg">${t.k > 1 ? `<b>${t.k}</b>` : ""}<i>${S.p.letters[t.v]}</i><sup>2</sup></span>`
+    : t.times != null
+      ? `${picture(t.v, t.k)}<span class="fs-op fs-op--in">×</span>${picture(t.times, 1)}`
+      : picture(t.v, t.k);
   return `<div class="fs-term">
       <span class="fs-slot"><input class="fs-box" type="text" inputmode="numeric" autocomplete="off"
              data-row="${row}" data-col="${col}" aria-label="What ${spoken(t)} is worth"><span class="fs-mark" role="img" hidden></span></span>
@@ -146,7 +152,7 @@ function redraw(fresh = new Set()) {
 
 /* ── deleting and duplicating a fruit ─────────────────────────────────── */
 
-const MAX_GROUP = 5;   // more than five of one fruit no longer fits a line
+const MAX_TERMS = 8;   // a line longer than this no longer fits
 const clone = (o) => JSON.parse(JSON.stringify(o));
 const termsOf = (row) => (row === "q" ? S.p.question.terms : S.p.equations[+row].terms);
 
@@ -154,28 +160,23 @@ function edited() {
   return JSON.stringify([S.p.equations, S.p.question]) !== JSON.stringify([S.orig.equations, S.orig.question]);
 }
 
-/* Does every fruit still have one value only? The same determinant test
-   the generator uses. */
-function stillOneAnswer() {
-  const n = S.p.n;
-  const M = S.p.equations.map((e) => {
-    const r = new Array(n).fill(0);
-    for (const t of e.terms) r[t.v] += t.s * t.k;
-    return r;
-  });
-  return det(M) !== 0;
-}
+/* Does every fruit still have one value only? The generator's own test:
+   the determinant for plain lines, line-by-line solving once a square or a
+   product is in. */
+const stillOneAnswer = () => uniquelySolvable(S.p);
 
 function editTerm(row, col, delta) {
   const p = S.p;
   const terms = termsOf(row);
   const t = terms[col];
   if (!t) return;
-  if (delta > 0 && t.k >= MAX_GROUP) return say(`${MAX_GROUP} is as many as fit in one group.`);
-  if (delta < 0 && t.k === 1 && terms.length === 1) return say("A line needs at least one fruit on it.");
+  if (delta > 0 && terms.length >= MAX_TERMS) return say(`${MAX_TERMS} is as many as fit on one line.`);
+  if (delta < 0 && terms.length === 1) return say("A line needs at least one fruit on it.");
 
-  t.k += delta;
-  if (t.k === 0) terms.splice(col, 1);
+  /* every fruit is its own term: duplicating puts a copy beside it,
+     deleting takes that one away */
+  if (delta > 0) terms.splice(col + 1, 0, { ...t });
+  else terms.splice(col, 1);
   S.explored = true;
   drawStats();
 
@@ -213,8 +214,8 @@ function openMenu(pick) {
   const m = $("#fs-menu");
   menuFor = { row: pick.dataset.row, col: +pick.dataset.col };
   const t = termsOf(menuFor.row)[menuFor.col];
-  const lone = t.k === 1 && termsOf(menuFor.row).length === 1;
-  m.querySelector("[data-act='dup']").disabled = t.k >= MAX_GROUP;
+  const lone = termsOf(menuFor.row).length === 1;
+  m.querySelector("[data-act='dup']").disabled = termsOf(menuFor.row).length >= MAX_TERMS;
   m.querySelector("[data-act='del']").disabled = lone;
   m.hidden = false;
   const r = pick.getBoundingClientRect();
@@ -429,17 +430,17 @@ function say(text, win = false) {
 
 /* ── the bar ──────────────────────────────────────────────────────────── */
 
+const POWERS = { none: "", squares: "squares", all: "squares and products" };
+
 function levelTip(l) {
-  const groups = l.maxK === 3 ? "single, double and triple fruits" : "single and double fruits";
-  const minus = l.minus ? ", some taken away" : "";
-  return `${l.fruits} fruits, ${groups}${minus}`;
+  return [`${l.fruits} fruits`, POWERS[l.powers], l.minus ? "some taken away" : ""].filter(Boolean).join(", ");
 }
 
 /* ── settings: a card of its own ──────────────────────────────────────── */
 
 /* the short form on a settings note: "3 fruits · triples · take away" */
 function levelShort(l) {
-  return [`${l.fruits} fruits`, l.maxK === 3 ? "triples" : "doubles", l.minus ? "take away" : ""].filter(Boolean).join(" · ");
+  return [`${l.fruits} fruits`, POWERS[l.powers], l.minus ? "take away" : ""].filter(Boolean).join(" · ");
 }
 
 /* Every setting is a plain ICON (no sticky note) (the house rule: a button shows
