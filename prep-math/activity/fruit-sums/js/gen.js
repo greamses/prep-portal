@@ -18,6 +18,9 @@
    zero there is exactly one solution, and it is the one we picked. Every
    puzzle is checked that way before it is returned.
 
+   Each level has a CAP on any line's total (the last line may go to 1.5 ×
+   the cap), so Hard stays hard by its shape, not by big numbers.
+
    THE LEVELS differ in how many fruits, how big a group of one fruit can be
    (single / double / triple), whether a term can be taken away, and the SHAPE
    of the system:
@@ -28,10 +31,10 @@
    ========================================================================== */
 
 export const LEVELS = [
-  { id: "starter", name: "Starter", fruits: 2, maxK: 2, minus: false, shape: "chain", max: 10, ask: "sum" },
-  { id: "easy", name: "Easy", fruits: 3, maxK: 2, minus: false, shape: "chain", max: 12, ask: "sum" },
-  { id: "medium", name: "Medium", fruits: 3, maxK: 3, minus: true, shape: "mixed", max: 15, ask: "sum" },
-  { id: "hard", name: "Hard", fruits: 4, maxK: 3, minus: true, shape: "tangle", max: 20, ask: "times" },
+  { id: "starter", name: "Starter", fruits: 2, maxK: 2, minus: false, shape: "chain", max: 10, cap: 40, ask: "sum" },
+  { id: "easy", name: "Easy", fruits: 3, maxK: 2, minus: false, shape: "chain", max: 12, cap: 60, ask: "sum" },
+  { id: "medium", name: "Medium", fruits: 3, maxK: 3, minus: true, shape: "mixed", max: 15, cap: 80, ask: "sum" },
+  { id: "hard", name: "Hard", fruits: 4, maxK: 3, minus: true, shape: "tangle", max: 12, cap: 60, ask: "times" },
 ];
 
 export const levelOf = (id) => LEVELS.find((l) => l.id === id) || LEVELS[0];
@@ -181,8 +184,10 @@ export function makePuzzle({ level = "starter", seed = 1, fruits }) {
     if (det(M) === 0) continue;
     /* a tangle that slipped into giving one fruit away on its own is a chain */
     if (shape === "tangle" && M.some((r) => r.filter((x) => x !== 0).length < 2)) continue;
-    /* keep totals within a child's reach */
-    if (eqs.some((e) => e.total > L.max * L.maxK * 3)) continue;
+    /* keep totals within a child's reach: every line, and the last one too */
+    if (eqs.some((e) => e.total > L.cap)) continue;
+    const q = question(R, L, vals);
+    if (q.answer > L.cap * 1.5) continue;
     if (shape === "tangle") eqs = shuffle(R, eqs);
     const chosen = shuffle(R, fruits).slice(0, n);
     return {
@@ -194,7 +199,7 @@ export function makePuzzle({ level = "starter", seed = 1, fruits }) {
       letters: "abcd".slice(0, n).split(""),
       values: vals,
       equations: eqs,
-      question: question(R, L, vals),
+      question: q,
     };
   }
   throw new Error("fruit-sums: no puzzle found");
