@@ -102,7 +102,8 @@
 }
 
 /* one equation a line */
-.fs-eqs { display: flex; flex-direction: column; gap: 1.3rem; }
+.fs-eqs { display: flex; flex-direction: column; gap: 2rem; }
+.fs-eqs:first-child { padding-top: 0.9rem; }
 .fs-eq {
   display: flex;
   align-items: flex-end;
@@ -180,20 +181,38 @@
 .fs-box.is-wrong { border-style: solid; border-color: var(--accent-danger, #f07a7a); background: color-mix(in srgb, var(--accent-danger, #f07a7a) 20%, transparent); }
 
 /* working boxes switched off: they go, and the lines close up */
-.fs-board--bare .fs-term > .fs-box { display: none; }
-.fs-board--bare .fs-eqs { gap: 0.9rem; }
+.fs-board--bare .fs-term > .fs-slot { display: none; }
+.fs-board--bare .fs-eqs { gap: 0.9rem; padding-top: 0; }
 .fs-tools .pp-note-btn.is-off { opacity: 0.55; }
 
+/* the pen's mark, written just above its box (pen-marks.js) */
+.fs-slot { position: relative; display: inline-flex; }
+.fs-slot--answer { align-self: center; margin-bottom: calc((var(--fs-fruit, 3.4rem) - 3rem) / 2); }
+.fs-mark {
+  position: absolute;
+  bottom: calc(100% - 0.15rem);
+  left: 50%;
+  width: 1.8rem;
+  height: 1.8rem;
+  transform: translateX(-50%);
+  pointer-events: none;
+  animation: fs-pen 0.22s ease-out;
+}
+.fs-mark[hidden] { display: none; }
+.fs-mark svg { width: 100%; height: 100%; display: block; fill: currentColor; filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.15)); }
+.fs-mark--right { color: #1f9d46; }
+.fs-mark--wrong { color: #d6322a; }
+@keyframes fs-pen { from { opacity: 0; transform: translateX(-50%) scale(0.6) rotate(-12deg); } }
+@media (prefers-reduced-motion: reduce) { .fs-mark { animation: none; } }
+
 .fs-box--answer {
-  align-self: center;
   width: 4.6rem;
   height: 3rem;
   font-size: 1.4rem;
-  margin-bottom: calc((var(--fs-fruit, 3.4rem) - 3rem) / 2);
 }
 
 /* the key */
-.fs-key__rows { display: flex; flex-direction: column; gap: 0.7rem; }
+.fs-key__rows { display: flex; flex-direction: column; gap: 1.5rem; padding-top: 0.9rem; }
 .fs-key__row { display: flex; align-items: center; gap: 0.6rem; --fs-fruit: 2.8rem; }
 .fs-key__pic { display: inline-flex; justify-content: center; min-width: 2.8rem; }
 .fs-key__row .fs-alg { font-size: 1.9rem; }

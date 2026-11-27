@@ -14,6 +14,7 @@
 import { UI } from "/utils/components/ui-icons.js";
 import { mountTooltips, setTip } from "/utils/components/tooltip.js";
 import { FRUITS, fruitSvg } from "/utils/components/fruits.js";
+import { PEN_TICK, PEN_CROSS } from "/utils/components/pen-marks.js";
 import { LEVELS, levelOf, makePuzzle, termValue } from "./gen.js";
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -68,8 +69,8 @@ function termHtml(t, row, col) {
     ? `${picture(t.v, t.k)}<span class="fs-op fs-op--in">×</span>${picture(t.times, 1)}`
     : picture(t.v, t.k);
   return `<div class="fs-term">
-      <input class="fs-box" type="text" inputmode="numeric" autocomplete="off"
-             data-row="${row}" data-col="${col}" aria-label="What ${spoken(t)} is worth">
+      <span class="fs-slot"><input class="fs-box" type="text" inputmode="numeric" autocomplete="off"
+             data-row="${row}" data-col="${col}" aria-label="What ${spoken(t)} is worth"><span class="fs-mark" role="img" hidden></span></span>
       <div class="fs-pic">${pic}</div>
     </div>`;
 }
@@ -94,14 +95,14 @@ function draw() {
   $("#fs-ask").innerHTML = lineHtml(
     p.question.terms,
     "q",
-    `<input class="fs-box fs-box--answer" id="fs-answer" type="text" inputmode="numeric" autocomplete="off" aria-label="The answer to the last line">`,
+    `<span class="fs-slot fs-slot--answer"><input class="fs-box fs-box--answer" id="fs-answer" type="text" inputmode="numeric" autocomplete="off" aria-label="The answer to the last line"><span class="fs-mark" role="img" hidden></span></span>`,
   );
   $("#fs-key").innerHTML = p.fruits
     .map((id, v) => `<label class="fs-key__row">
         <span class="fs-key__pic">${S.letters ? `<span class="fs-alg"><i>${p.letters[v]}</i></span>` : `<span class="fs-fruit">${fruitSvg(id)}</span>`}</span>
         <span class="fs-op">=</span>
-        <input class="fs-box fs-box--key" type="text" inputmode="numeric" autocomplete="off"
-               data-v="${v}" aria-label="What ${S.letters ? p.letters[v] : nameOf(id).toLowerCase()} is worth">
+        <span class="fs-slot"><input class="fs-box fs-box--key" type="text" inputmode="numeric" autocomplete="off"
+               data-v="${v}" aria-label="What ${S.letters ? p.letters[v] : nameOf(id).toLowerCase()} is worth"><span class="fs-mark" role="img" hidden></span></span>
       </label>`)
     .join("");
   $("#fs-key-label").textContent = S.letters ? "Each letter is worth" : "Each fruit is worth";
@@ -115,7 +116,7 @@ function redraw() {
   for (const [row, col, v, id, value, cls] of kept) {
     const sel = id ? `#${id}` : v != null ? `.fs-box--key[data-v="${v}"]` : `.fs-box[data-row="${row}"][data-col="${col}"]`;
     const b = $(sel);
-    if (b) { b.value = value; b.className = cls; }
+    if (b) { b.value = value; mark(b, cls.includes("is-right") ? true : cls.includes("is-wrong") ? false : null); }
   }
 }
 
@@ -135,9 +136,17 @@ const read = (b) => {
   return t === "" ? null : Number(t);
 };
 
+/* A box marked as the exam paper marks it: the pen's green tick or red
+   cross (utils/components/pen-marks.js) written just above the box. */
 function mark(b, ok) {
   b.classList.toggle("is-right", ok === true);
   b.classList.toggle("is-wrong", ok === false);
+  const m = b.parentElement?.querySelector(".fs-mark");
+  if (!m) return;
+  m.hidden = ok == null;
+  m.className = `fs-mark${ok === true ? " fs-mark--right" : ok === false ? " fs-mark--wrong" : ""}`;
+  m.innerHTML = ok == null ? "" : ok ? PEN_TICK : PEN_CROSS;
+  m.setAttribute("aria-label", ok ? "right" : "wrong");
 }
 
 function check() {
