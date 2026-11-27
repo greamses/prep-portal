@@ -441,50 +441,95 @@ function say(text, win = false) {
 
 /* ── the bar ──────────────────────────────────────────────────────────── */
 
-function drawLevels() {
-  $("#fs-levels").innerHTML = LEVELS.map((l, i) =>
-    `<button type="button" role="radio" class="pp-sticky pp-note-btn pp-sticky--c${[0, 2, 4, 1][i]} fs-level" data-level="${l.id}"
-             aria-checked="${l.id === S.level}" data-tip="${levelTip(l)}">${l.name}</button>`).join("");
-}
-
 function levelTip(l) {
   const groups = l.maxK === 3 ? "single, double and triple fruits" : "single and double fruits";
   const minus = l.minus ? ", some taken away" : "";
   return `${l.fruits} fruits, ${groups}${minus}`;
 }
 
-function drawLettersButton() {
-  const b = $("#fs-letters");
-  const word = S.letters ? "Show fruits" : "Show letters";
-  b.innerHTML = S.letters
-    ? `<span class="fs-fruit fs-fruit--btn" aria-hidden="true">${fruitSvg("apple")}</span>`
-    : `<span class="fs-abc" aria-hidden="true">abc</span>`;
-  b.setAttribute("aria-label", word);
-  b.setAttribute("aria-pressed", String(S.letters));
-  setTip(b, word);
-  b.dataset.tip = word;
+/* ── settings: a card of its own ──────────────────────────────────────── */
+
+/* the short form on a settings note: "3 fruits · triples · take away" */
+function levelShort(l) {
+  return [`${l.fruits} fruits`, l.maxK === 3 ? "triples" : "doubles", l.minus ? "take away" : ""].filter(Boolean).join(" · ");
 }
 
-/* The working boxes come and go with a switch; what is typed in them stays,
-   and a hidden box is never marked. */
-function drawWorkButton() {
-  const b = $("#fs-work");
-  const word = S.work ? "Hide the working boxes" : "Show the working boxes";
-  b.innerHTML = WORK_ICON;
-  b.classList.toggle("is-off", !S.work);
-  b.setAttribute("aria-label", word);
-  b.setAttribute("aria-pressed", String(S.work));
-  setTip(b, word);
-  b.dataset.tip = word;
+const optHtml = (kind, val, label, on, hint = "") =>
+  `<button type="button" role="radio" class="pp-sticky pp-note-btn fs-opt${on ? " is-on" : ""}"`
+  + ` data-opt="${kind}" data-val="${val}" aria-checked="${on}">`
+  + `<span>${label}</span>${hint ? `<em>${hint}</em>` : ""}</button>`;
+
+function drawSettings() {
+  $("#fs-opt-level").innerHTML = LEVELS
+    .map((l) => optHtml("level", l.id, l.name, S.level === l.id, levelShort(l))).join("");
+  $("#fs-opt-letters").innerHTML =
+    optHtml("letters", "0", "Fruits", !S.letters, "the pictures")
+    + optHtml("letters", "1", "Letters", S.letters, "a, b, c as algebra");
+  $("#fs-opt-work").innerHTML =
+    optHtml("work", "1", "Shown", S.work, "write each term's value")
+    + optHtml("work", "0", "Hidden", !S.work, "just the fruits");
+}
+
+/* The pill in the bar names the level and opens the settings. */
+function drawLevelPill() {
+  const b = $("#fs-level-pill");
+  const l = levelOf(S.level);
+  b.textContent = l.name;
+  b.setAttribute("aria-label", `Level: ${l.name}. Change the settings`);
+  setTip(b, `${levelTip(l)}. Tap to change.`);
+  b.dataset.tip = `${levelTip(l)}. Tap to change.`;
+}
+
+/* The working boxes come and go; what is typed in them stays, and a hidden
+   box is never marked. */
+function applyWork() {
   document.querySelector(".fs-board").classList.toggle("fs-board--bare", !S.work);
 }
 
-/* A box over a fruit: the working box, in our own drawing. */
-const WORK_ICON = `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">`
-  + `<rect x="3" y="1.4" width="18" height="9.4" rx="1.4" fill="var(--accent-secondary)"/>`
-  + `<rect x="7" y="5" width="10" height="2.4" rx="1.2" fill="#fff"/>`
-  + `<circle cx="12" cy="17.4" r="5.4" fill="var(--accent-danger)"/>`
-  + `<circle cx="10.2" cy="15.6" r="1.3" fill="#fff" opacity=".7"/></svg>`;
+let settingsFrom = null;
+function openSettings() {
+  settingsFrom = document.activeElement;
+  closeMenu();
+  drawSettings();
+  $("#fs-settings").hidden = false;
+  $("#fs-settings .fs-opt.is-on")?.focus({ preventScroll: true });
+}
+function closeSettings() {
+  const m = $("#fs-settings");
+  if (m.hidden) return;
+  m.hidden = true;
+  (settingsFrom || $("#fs-open-settings")).focus?.({ preventScroll: true });
+}
+
+function wireSettings() {
+  const m = $("#fs-settings");
+  iconButton("#fs-settings-close", UI.close(), "Close the settings");
+  m.addEventListener("click", (e) => {
+    if (e.target.closest("[data-close]")) return closeSettings();
+    const b = e.target.closest(".fs-opt");
+    if (!b) return;
+    const { opt, val } = b.dataset;
+    if (opt === "level" && val !== S.level) {
+      S.level = val;
+      drawLevelPill();
+      deal();
+    }
+    if (opt === "letters" && (val === "1") !== S.letters) {
+      S.letters = val === "1";
+      redraw();
+    }
+    if (opt === "work" && (val === "1") !== S.work) {
+      S.work = val === "1";
+      applyWork();
+    }
+    remember();
+    drawSettings();
+    m.querySelector(`.fs-opt[data-opt="${opt}"][data-val="${val}"]`)?.focus({ preventScroll: true });
+  });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeSettings(); });
+  $("#fs-open-settings").addEventListener("click", openSettings);
+  $("#fs-level-pill").addEventListener("click", openSettings);
+}
 
 function iconButton(sel, glyph, word) {
   const b = $(sel);
@@ -505,34 +550,16 @@ function onKey(e) {
 
 function init() {
   recall();
-  drawLevels();
-  drawLettersButton();
-  drawWorkButton();
+  drawLevelPill();
+  applyWork();
+  iconButton("#fs-open-settings", UI.settings(), "Settings");
   iconButton("#fs-check", UI.check(), "Check my answers");
   iconButton("#fs-new", UI.again(), "New puzzle");
   iconButton("#fs-reset", UI.undo(), "Put the lines back");
   buildMenu();
   mountTooltips();
 
-  $("#fs-levels").addEventListener("click", (e) => {
-    const b = e.target.closest(".fs-level");
-    if (!b) return;
-    S.level = b.dataset.level;
-    remember();
-    document.querySelectorAll(".fs-level").forEach((x) => x.setAttribute("aria-checked", String(x === b)));
-    deal();
-  });
-  $("#fs-letters").addEventListener("click", () => {
-    S.letters = !S.letters;
-    remember();
-    drawLettersButton();
-    redraw();
-  });
-  $("#fs-work").addEventListener("click", () => {
-    S.work = !S.work;
-    remember();
-    drawWorkButton();
-  });
+  wireSettings();
   $("#fs-check").addEventListener("click", check);
   $("#fs-new").addEventListener("click", deal);
   $("#fs-reset").addEventListener("click", putBack);

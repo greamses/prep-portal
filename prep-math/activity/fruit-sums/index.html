@@ -77,14 +77,13 @@
       <h1 class="fs-sr">Fruit Sums</h1>
 
       <section class="fs-bar">
-        <div class="fs-levels" id="fs-levels" role="radiogroup" aria-label="How hard"></div>
         <div class="fs-stats" aria-live="off">
+          <button type="button" class="pp-pill pp-plain fs-stat fs-level-pill" id="fs-level-pill"></button>
           <span class="pp-pill fs-stat" id="fs-time" role="timer" aria-label="Time"></span>
           <span class="pp-pill fs-stat" id="fs-score" aria-label="Score"></span>
         </div>
         <div class="fs-tools">
-          <button type="button" class="pp-sticky pp-note-btn pp-sticky--c3" id="fs-letters"></button>
-          <button type="button" class="pp-sticky pp-note-btn pp-sticky--c5" id="fs-work"></button>
+          <button type="button" class="pp-sticky pp-note-btn pp-sticky--c3" id="fs-open-settings"></button>
           <button type="button" class="pp-sticky pp-note-btn pp-sticky--c4" id="fs-reset"></button>
           <button type="button" class="pp-sticky pp-note-btn pp-sticky--c2" id="fs-check"></button>
           <button type="button" class="pp-sticky pp-note-btn pp-sticky--c0" id="fs-new"></button>
@@ -111,6 +110,35 @@
         </aside>
       </section>
     </main>
+
+    <!-- SETTINGS: its own card, apart from the game, centred and only as big
+         as what is in it. -->
+    <div class="fs-modal" id="fs-settings" role="dialog" aria-modal="true"
+         aria-labelledby="fs-settings-title" hidden>
+      <div class="fs-modal__back" data-close></div>
+      <div class="pp-receipt fs-modal__card">
+        <div class="pp-receipt__paper fs-modal__paper">
+          <header class="fs-modal__head">
+            <h2 class="fs-modal__title" id="fs-settings-title">Settings</h2>
+            <button type="button" class="pp-sticky pp-note-btn fs-modal__close" data-close id="fs-settings-close"></button>
+          </header>
+          <div class="fs-modal__body">
+            <div class="fs-set">
+              <span class="fs-set__label">How hard</span>
+              <div class="fs-opts" id="fs-opt-level" role="radiogroup" aria-label="How hard"></div>
+            </div>
+            <div class="fs-set">
+              <span class="fs-set__label">Draw the unknowns as</span>
+              <div class="fs-opts" id="fs-opt-letters" role="radiogroup" aria-label="Draw the unknowns as"></div>
+            </div>
+            <div class="fs-set">
+              <span class="fs-set__label">Working boxes above the terms</span>
+              <div class="fs-opts" id="fs-opt-work" role="radiogroup" aria-label="Working boxes"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <script type="module" src="/utils/components/nav-builder.js"></script>
     <script type="module" src="./js/main.js"></script>

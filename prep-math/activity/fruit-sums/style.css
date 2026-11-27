@@ -34,34 +34,21 @@
   gap: 0.8rem 1.2rem;
   margin: 0 0 1.4rem;
 }
-.fs-levels, .fs-tools { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+.fs-tools { display: flex; flex-wrap: wrap; gap: 0.6rem; }
 
 /* the clock and the score: pills, read not pressed */
-.fs-stats { display: flex; gap: 0.6rem; margin-left: auto; }
+.fs-stats { display: flex; flex-wrap: wrap; gap: 0.6rem; }
 .fs-stat.pp-pill { cursor: default; font-size: 0.85rem; padding: 0.45rem 0.8rem; color: var(--ink, #2a2723); }
 .fs-stat.pp-pill:hover { transform: none; box-shadow: var(--shadow-sm); }
 .fs-stat.pp-pill svg { width: 17px; height: 17px; }
 .fs-stat span { font-variant-numeric: tabular-nums; min-width: 2.6em; text-align: right; }
 .fs-stat.pp-pill--warn { color: var(--ink, #2a2723); }
 .fs-stat.pp-pill--ok { color: var(--ink, #2a2723); }
-@media (max-width: 560px) { .fs-stats { margin-left: 0; } }
 
-.fs-level.pp-note-btn { opacity: 0.6; padding: 0.5rem 0.95rem 0.55rem; }
-.fs-level.pp-note-btn[aria-checked="true"] {
-  opacity: 1;
-  transform: rotate(var(--pp-note-tilt, -2deg)) translateY(-3px);
-  box-shadow: var(--shadow-md);
-}
+
 
 .fs-tools .pp-note-btn { min-width: 2.9rem; min-height: 2.6rem; padding: 0.5rem 0.75rem; }
 .fs-tools .pp-note-btn svg { width: 20px; height: 20px; }
-.fs-abc {
-  font-family: "STIX Two Text", "Cambria Math", Georgia, serif;
-  font-style: italic;
-  font-weight: 500;
-  font-size: 1.15rem;
-  line-height: 1;
-}
 
 .fs-say {
   flex-basis: 100%;
@@ -132,7 +119,6 @@
 .fs-group .fs-fruit + .fs-fruit { margin-left: calc(var(--fs-fruit, 3.4rem) * -0.22); }
 .fs-fruit { display: inline-block; width: var(--fs-fruit, 3.4rem); height: var(--fs-fruit, 3.4rem); }
 .fs-fruit svg { width: 100%; height: 100%; display: block; }
-.fs-fruit--btn { --fs-fruit: 22px; }
 
 /* letters: algebra set in the maths face */
 .fs-alg {
@@ -302,3 +288,87 @@
   .fs-roll > span, .fs-total--up, .fs-total--down { animation: none !important; }
   .fs-roll__old { display: none !important; }
 }
+
+/* the level pill opens the settings, so it is pressed, not just read */
+.fs-stat.fs-level-pill { cursor: pointer; font-family: var(--font-mono, monospace); text-transform: uppercase; letter-spacing: 0.06em; }
+.fs-stat.fs-level-pill:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+
+/* ── settings: a card of its own, centred, as big as what is in it ─────── */
+
+.fs-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10080;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+.fs-modal[hidden] { display: none; }
+.fs-modal__back { position: absolute; inset: 0; background: rgba(30, 27, 23, 0.42); }
+.fs-modal .fs-modal__card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: fit-content;
+  max-width: min(44rem, 100%);
+  max-height: min(88vh, 46rem);
+}
+.fs-modal .fs-modal__paper {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 1.2rem 1.4rem 1.5rem;
+  overflow: hidden;
+}
+.fs-modal__head { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+.fs-modal__title {
+  flex: 1 1 auto;
+  margin: 0;
+  font-family: var(--font-display, "Unbounded", system-ui, sans-serif);
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--ink, #2a2723);
+}
+.fs-modal .fs-modal__close {
+  --pp-note-bg: #ffd7a3;
+  --pp-note-tilt: 2deg;
+  display: grid;
+  place-items: center;
+  width: 2.3rem;
+  height: 2.1rem;
+  padding: 0;
+}
+.fs-modal .fs-modal__close svg { width: 16px; height: 16px; }
+.fs-modal__body { min-height: 0; overflow: auto; padding: 0.2rem 0.2rem 0.3rem 0; }
+
+.fs-set + .fs-set { margin-top: 1.2rem; }
+.fs-set__label {
+  display: block;
+  margin-bottom: 0.55rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-secondary, #6b655c);
+}
+.fs-opts { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+.fs-opts .fs-opt {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  min-height: 2.6rem;
+  padding: 0.5rem 0.85rem 0.55rem;
+  font-size: 0.9rem;
+  line-height: 1.2;
+  text-align: left;
+  --pp-note-bg: #f0ece2;
+  color: #6b645a;
+}
+.fs-opts .fs-opt.is-on { --pp-note-bg: #fff3a8; color: #14130f; }
+.fs-opts .fs-opt em { font-size: 0.66rem; font-style: normal; font-weight: 600; opacity: 0.75; }
+
+/* the four levels two by two, so the card is as wide as two notes */
+#fs-opt-level { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+#fs-opt-level .fs-opt { width: 100%; }
+@media (max-width: 380px) { #fs-opt-level { grid-template-columns: minmax(0, 1fr); } }
